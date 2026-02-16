@@ -81,6 +81,8 @@ class VolterraSolver:
             # Even power or non-integer: use absolute value
             return np.abs(u) ** self.alpha
     
+    
+    # Toute l'equation à comprendre et modifier est ici
     def residual(self, Z_n: np.ndarray, n: int) -> np.ndarray:
         """
         Compute residual: h * sum_{j>=1} psi(Z^n - Z^{n-j}) * R_j - f^n
