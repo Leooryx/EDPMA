@@ -255,7 +255,7 @@ def main():
     M = 500         # Number of points to compute
     
     # Forcing function choice: 'constant', 'oscillating', or 'random'
-    forcing_type = 'random'
+    forcing_type = 'oscillating'
     
     # Parameters for forcing function
     f_amplitude = 1.0

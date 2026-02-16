@@ -253,7 +253,7 @@ def main():
     M = 500         # Number of points to compute
     
     # Forcing function choice: 'constant', 'oscillating', or 'random'
-    forcing_type = 'random'
+    forcing_type = 'oscillating'
     
     # Parameters for forcing function
     f_amplitude = 1.0
@@ -270,7 +270,6 @@ def main():
     
     # Plot and save options
     do_plot = True
-    do_save = False
     save_filename = "volterra_solution"
     
     # ========================================================================
@@ -345,20 +344,13 @@ def main():
         solver.plot_solution(t, Z)
     
     # Save results
-    if do_save:
-        np.savez(f"{save_filename}.npz", t=t, Z=Z, alpha=alpha, d=d, h=h, N=N, M=M)
-        print(f"Results saved to {save_filename}.npz")
+    np.savez(f"{save_filename}.npz", t=t, Z=Z, alpha=alpha, d=d, h=h, N=N, M=M)
+    print(f"Results saved to {save_filename}.npz")
     
-    plot_choice = input("\nPlot solution? (y/n): ")
-    if plot_choice.lower() == 'y':
-        solver.plot_solution(t, Z)
+    #plot
+    solver.plot_solution(t, Z)
     
-    # Save results
-    save_choice = input("\nSave results? (y/n): ")
-    if save_choice.lower() == 'y':
-        filename = input("Enter filename (without extension): ")
-        np.savez(f"{filename}.npz", t=t, Z=Z, alpha=alpha, d=d, h=h, N=N, M=M)
-        print(f"Results saved to {filename}.npz")
+
 
 
 if __name__ == "__main__":
