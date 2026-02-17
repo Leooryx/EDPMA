@@ -1,6 +1,6 @@
 """
 Solver for the equation:
-h * sum_{j>=1} psi(Z^n - Z^{n-j}) * R_j = f^n
+    sum_{j>=1} psi'(Z^n - Z^{n-j}) * h = f^n
 
 where:
 - Z^n = z_p(n*h) for -N <= n < 0 (initial conditions)
@@ -15,6 +15,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
 from typing import Callable, Tuple, Optional
+
+from animation import create_animation
 
 
 class VolterraSolver:
@@ -72,20 +74,17 @@ class VolterraSolver:
     def psi(self, u: np.ndarray) -> np.ndarray:
         """
         Nonlinearity psi(u) = u^alpha (component-wise).
-        Handles sign for non-integer alpha.
         """
-        if self.alpha == int(self.alpha) and int(self.alpha) % 2 == 1:
-            # Odd integer power: preserve sign
-            return np.sign(u) * np.abs(u) ** self.alpha
-        else:
-            # Even power or non-integer: use absolute value
-            return np.abs(u) ** self.alpha
+        return 0.5*u ** self.alpha
+
+    def psi_derivative(self, u: np.ndarray) -> np.ndarray:
+        return self.alpha*u**(self.alpha-1)
     
     
     # Toute l'equation à comprendre et modifier est ici
     def residual(self, Z_n: np.ndarray, n: int) -> np.ndarray:
         """
-        Compute residual: h * sum_{j>=1} psi(Z^n - Z^{n-j}) * R_j - f^n
+        Compute residual: h * sum_{j>=1} psi'(Z^n - Z^{n-j}) * R_j - f^n
         """
         res = np.zeros(self.d)
         
@@ -94,7 +93,7 @@ class VolterraSolver:
             if j < len(self.R):
                 idx_prev = n + self.N - j
                 Z_diff = Z_n - self.Z[idx_prev]
-                res += self.h * self.psi(Z_diff) * self.R[j]
+                res += self.h * self.psi_derivative(Z_diff) * self.R[j]
         
         # Subtract f^n
         res -= self.f_func(n * self.h)
@@ -159,7 +158,7 @@ class VolterraSolver:
         
         plt.suptitle(f'Solution for $\\psi(u) = u^{{{self.alpha}}}$, $d={self.d}$')
         plt.tight_layout()
-        plt.savefig('/home/onyxia/work/EDPMA/solutions.png')
+        plt.savefig('/home/onyxia/work/EDPMA/residence_time.png')
         plt.show()
 
 # quasi ok niveau compréhension
@@ -214,17 +213,6 @@ def compute_R_exponential(length: int, decay_rate: float = 0.5) -> np.ndarray:
     #R is the density of links (because it works on j spatial position) and not time)
 
 
-def compute_R_power_law(length: int, exponent: float = 1.5) -> np.ndarray:
-    """
-    Compute R_j coefficients with power law decay.
-    R_j = j^(-exponent)
-    """
-    R = np.zeros(length)
-    R[0] = 0  # R_0 is not used
-    for j in range(1, length):
-        R[j] = j ** (-exponent)
-    return R
-
 
 # ============================================================================
 # Main program
@@ -236,7 +224,7 @@ def main():
     """
     print("=" * 70)
     print("Volterra Equation Solver")
-    print("Equation: h * sum_{j>=1} psi(Z^n - Z^{n-j}) * R_j = f^n")
+    print("Equation: h * sum_{j>=1} psi'(Z^n - Z^{n-j}) * R_j = f^n")
     print("=" * 70)
     
     # ========================================================================
@@ -244,7 +232,7 @@ def main():
     # ========================================================================
     
     # Dimension (1 or 2)
-    d = 1
+    d = 2
     
     # Power alpha for psi(u) = u^alpha
     alpha = 2
@@ -262,18 +250,14 @@ def main():
     f_frequency = 1.0
     f_seed = 42
     
-    # R_j decay type: 'exponential' or 'power_law'
-    R_decay_type = 'power_law'
+    # R_j decay type: 
     decay_rate = 0.5      # For exponential decay
-    power_exponent = 1.5  # For power law decay
     
     # Initial condition amplitude
     z_initial_amplitude = 0.1
     
     # Plot and save options
-    do_plot = True
-    do_save = False
-    save_filename = "volterra_solution"
+    save_filename = "outputs/residence _time"
     
     # ========================================================================
     # Setup based on parameters
@@ -301,15 +285,8 @@ def main():
         f_func = f_constant(d, value=1.0)
     
     # Setup R_j coefficients
-    if R_decay_type == 'exponential':
-        R = compute_R_exponential(M + N + 10, decay_rate)
-        print(f"  R_j: exponential decay, rate = {decay_rate}")
-    elif R_decay_type == 'power_law':
-        R = compute_R_power_law(M + N + 10, power_exponent)
-        print(f"  R_j: power law decay, exponent = {power_exponent}")
-    else:
-        print(f"  Warning: Unknown R decay type '{R_decay_type}', using exponential")
-        R = compute_R_exponential(M + N + 10, 0.5)
+    R = compute_R_exponential(M + N + 10, decay_rate)
+    print(f"  R_j: exponential decay, rate = {decay_rate}")
     
     # Setup initial conditions
     z_initial = z_initial_default(d, amplitude=z_initial_amplitude)
@@ -339,28 +316,27 @@ def main():
     print(f"Final value Z^{M}: {Z[-1]}")
     
     # ========================================================================
-    # Plot
+    # Plot and save
     # ========================================================================
     
-    if do_plot:
-        print("\nPlotting solution...")
-        solver.plot_solution(t, Z)
+    solver.plot_solution(t, Z)
+    np.savez(f"{save_filename}.npz", t=t, Z=Z, alpha=alpha, d=d, h=h, N=N, M=M)
+
     
-    # Save results
-    if do_save:
-        np.savez(f"{save_filename}.npz", t=t, Z=Z, alpha=alpha, d=d, h=h, N=N, M=M)
-        print(f"Results saved to {save_filename}.npz")
+    print("=" * 70)
+    print("White Blood Cell Adhesion Animation")
+    print("Using Volterra Equation for Cell Dynamics")
+    print("=" * 70)
     
-    plot_choice = input("\nPlot solution? (y/n): ")
-    if plot_choice.lower() == 'y':
-        solver.plot_solution(t, Z)
+    print("\nCreating animation...")
+    fig, anim = create_animation(t, Z, h, N)
+        
+    print("Saving as GIF...")
+    anim.save('outputs/white_cell_adhesion.gif', writer='pillow', fps=20)
     
-    # Save results
-    save_choice = input("\nSave results? (y/n): ")
-    if save_choice.lower() == 'y':
-        filename = input("Enter filename (without extension): ")
-        np.savez(f"{filename}.npz", t=t, Z=Z, alpha=alpha, d=d, h=h, N=N, M=M)
-        print(f"Results saved to {filename}.npz")
+    plt.tight_layout()
+    plt.show()
+    
 
 
 if __name__ == "__main__":

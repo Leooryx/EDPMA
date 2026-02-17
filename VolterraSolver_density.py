@@ -157,7 +157,7 @@ class VolterraSolver:
         
         plt.suptitle(f'Solution for $\\psi(u) = u^{{{self.alpha}}}$, $d={self.d}$')
         plt.tight_layout()
-        plt.savefig('/home/onyxia/work/EDPMA/solutions.png')
+        plt.savefig('/home/onyxia/work/EDPMA/density_solutions.png')
         plt.show()
 
 # quasi ok niveau compréhension
@@ -270,7 +270,7 @@ def main():
     
     # Plot and save options
     do_plot = True
-    save_filename = "volterra_solution"
+    save_filename = "outputs/density_solution"
     
     # ========================================================================
     # Setup based on parameters
