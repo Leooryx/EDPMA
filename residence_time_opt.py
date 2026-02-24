@@ -70,6 +70,11 @@ class VolterraSolver:
         self.R = np.array(R)
         self.f_func = f_func
         self.z_initial = z_initial
+
+        # created variables for optimisation
+        self.X_grid = np.arange(self.N_x) * self.delta_x
+        self.A = np.zeros(self.N_x)
+        self.decay_factor = np.exp(-0.5 * self.h)
         
         # Storage for solution
         self.Z = np.zeros((N + M + 1, d)) #matrix 
@@ -91,35 +96,32 @@ class VolterraSolver:
             return np.abs(u) ** self.alpha
 
     # local time ###################################################################
-    def local_time(self, n, x):
-        local_time = 0
-        for i in range(n + self.N):
-            if x <= self.Z[i] <= x + self.delta_x: #on regarde si la position est dans l'intervalle souhaité
-                time_diff = (n - (i - self.N)) * self.h # temps écoulé entre l'instant i et l'instant présent n
-                local_time = local_time + self.h * np.exp(-0.5 * time_diff)
-                # decay_rate = 0.5
-        return local_time
+    def local_time(self, n):
+        self.A *= self.decay_factor
+        z_n = self.Z[n + self.N - 1]
+        k_idx = (z_n / self.delta_x).astype(int)
+
+        if 0 <= k_idx < self.N_x:
+            self.A[k_idx] += self.h
+        #no return we just update the list
 
 
-    def residual(self, Z_n: np.ndarray, n: int) -> np.ndarray:
+    def residual(self, z_n: np.ndarray, n: int) -> np.ndarray:
         
-        res = np.zeros(self.d)
-        
-        for k in range(0, self.N_x):
-            x_k = k * self.delta_x
-            A_k = self.local_time(n, x_k)
-            if k < len(self.R):
-                res += self.psi(Z_n - x_k) * A_k * self.delta_x #* self.R[k]
-        
-        # Subtract f^n
+        res = self.psi(z_n - self.X_grid) * self.A #* self.R #remove R or not?
+        res = np.sum(res) * self.delta_x
         res -= self.f_func(n * self.h)
         
         return res
     
+
     def solve_step(self, n: int) -> np.ndarray:
         """
         Solve for Z^n using nonlinear solver.
         """
+        # local time update
+        self.local_time(n)
+        
         # Initial guess: use previous value
         Z_guess = self.Z[n + self.N - 1] if n > 0 else self.Z[self.N - 1]
         
@@ -291,7 +293,7 @@ def main():
     
     # Plot and save options
     do_plot = True
-    save_filename = "outputs/residence_time"
+    save_filename = "outputs/residence_time_opt"
     
     # ========================================================================
     # Setup based on parameters

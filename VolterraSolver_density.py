@@ -157,7 +157,7 @@ class VolterraSolver:
         
         plt.suptitle(f'Solution for $\\psi(u) = u^{{{self.alpha}}}$, $d={self.d}$')
         plt.tight_layout()
-        plt.savefig('/home/onyxia/work/EDPMA/density_solutions.png')
+        plt.savefig('/home/onyxia/work/EDPMA/outputs/density_solutions.png')
         plt.show()
 
 # quasi ok niveau compréhension
@@ -261,7 +261,7 @@ def main():
     f_seed = 42
     
     # R_j decay type: 'exponential' or 'power_law'
-    R_decay_type = 'power_law'
+    R_decay_type = 'exponential'
     decay_rate = 0.5      # For exponential decay
     power_exponent = 1.5  # For power law decay
     
@@ -347,8 +347,6 @@ def main():
     np.savez(f"{save_filename}.npz", t=t, Z=Z, alpha=alpha, d=d, h=h, N=N, M=M)
     print(f"Results saved to {save_filename}.npz")
     
-    #plot
-    solver.plot_solution(t, Z)
     
 
 
