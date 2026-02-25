@@ -273,7 +273,7 @@ def main():
 
     # Notre implémentation
     delta_x = 0.01
-    N_x = 60
+    N_x = 600
     
     # Forcing function choice: 'constant', 'oscillating', or 'random'
     forcing_type = 'oscillating'
@@ -284,7 +284,7 @@ def main():
     f_seed = 42
     
     # R_j decay type: 'exponential' or 'power_law'
-    R_decay_type = 'power_law'
+    R_decay_type = 'exponential'
     decay_rate = 0.5      # For exponential decay
     power_exponent = 1.5  # For power law decay
     

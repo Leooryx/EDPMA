@@ -282,7 +282,7 @@ def main():
     f_seed = 42
     
     # R_j decay type: 'exponential' or 'power_law'
-    R_decay_type = 'power_law'
+    R_decay_type = 'exponential'
     decay_rate = 0.5      # For exponential decay
     power_exponent = 1.5  # For power law decay
     
