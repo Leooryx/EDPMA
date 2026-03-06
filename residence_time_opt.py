@@ -73,7 +73,7 @@ class VolterraSolver:
 
         # created variables for optimisation
         self.X_grid = np.arange(self.N_x) * self.delta_x
-        self.A = np.zeros(self.N_x)
+        self.A = np.ones(self.N_x) # A_0 is a list of 1 (my choice)
         self.decay_factor = np.exp(-0.5 * self.h)
         
         # Storage for solution
@@ -82,6 +82,7 @@ class VolterraSolver:
         # Initialize with initial conditions
         for n in range(-N, 0): # include past history
             self.Z[n + N] = self.z_initial(n * h) 
+        
     
     def psi(self, u: np.ndarray) -> np.ndarray:
         """
@@ -95,10 +96,13 @@ class VolterraSolver:
             # Even power or non-integer: use absolute value
             return np.abs(u) ** self.alpha
 
-    # local time ###################################################################
+    # local time ################################################################### 
     def local_time(self, n):
-        self.A *= self.decay_factor
+        """A_x^n = \Delta t \delta_{x=z^{n-1}} + (1 - \lambda \Delta t)A_x^{n-1}"""
+        decay_term = 1 - (0.5 * self.h) # lambda = 0.5
+        self.A *= decay_term
         z_n = self.Z[n + self.N - 1]
+
         k_idx = (z_n / self.delta_x).astype(int)
 
         if 0 <= k_idx < self.N_x:
@@ -108,7 +112,7 @@ class VolterraSolver:
 
     def residual(self, z_n: np.ndarray, n: int) -> np.ndarray:
         
-        res = self.psi(z_n - self.X_grid) * self.A #* self.R #remove R or not?
+        res = self.psi(z_n - self.X_grid) * self.A 
         res = np.sum(res) * self.delta_x
         res -= self.f_func(n * self.h)
         
