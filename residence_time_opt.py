@@ -44,7 +44,7 @@ class VolterraSolver:
         delta_x : float
             Space step
         N_x : int
-            Number of space points
+            Max position in space
         N : int
             Number of initial points (for n in [-N, 0)) # points for past history
         M : int
@@ -71,17 +71,36 @@ class VolterraSolver:
         self.f_func = f_func
         self.z_initial = z_initial
 
+        self.lamb = 0.5
+
         # created variables for optimisation
-        self.X_grid = np.arange(self.N_x) * self.delta_x
-        self.A = np.ones(self.N_x) # A_0 is a list of 1 (my choice)
-        self.decay_factor = np.exp(-0.5 * self.h)
+        self.X_grid = np.arange(self.N_x, step=self.delta_x) 
+
+        #local time
+        self.A_minus_N = np.zeros( int(self.N_x / self.delta_x)) 
         
         # Storage for solution
-        self.Z = np.zeros((N + M + 1, d)) #matrix 
+        self.Z = np.zeros((N + M + 1, d)) 
         
         # Initialize with initial conditions
         for n in range(-N, 0): # include past history
             self.Z[n + N] = self.z_initial(n * h) 
+        print(min(self.Z))
+        print(max(self.Z)) #particle goes between 0 and 0.09990005 at initial time
+
+        def initial_local_time(Z):
+            qt = 1-self.lamb*self.h
+            for n in range(-N, 0):
+                if n == -N:
+                    A_initial = self.A_minus_N.copy()
+                else:
+                    A_initial *= qt
+                    k_idx = (self.Z[n+N] / self.delta_x).astype(int)
+                    A_initial[k_idx] += self.h
+            return A_initial
+
+        self.A_initial = initial_local_time(self.Z)
+
         
     
     def psi(self, u: np.ndarray) -> np.ndarray:
@@ -99,13 +118,15 @@ class VolterraSolver:
     # local time ################################################################### 
     def local_time(self, n):
         """A_x^n = \Delta t \delta_{x=z^{n-1}} + (1 - \lambda \Delta t)A_x^{n-1}"""
-        decay_term = 1 - (0.5 * self.h) # lambda = 0.5
-        self.A *= decay_term
-        z_n = self.Z[n + self.N - 1]
-
-        k_idx = (z_n / self.delta_x).astype(int)
-
-        if 0 <= k_idx < self.N_x:
+        
+        qt = 1-self.lamb*self.h
+        
+        if n==0:
+            self.A = self.A_initial.copy() # pb with deep copy?
+        else:
+            self.A *= qt
+            z_n = self.Z[n + self.N - 1]
+            k_idx = (z_n / self.delta_x).astype(int)
             self.A[k_idx] += self.h
         #no return we just update the list
 
