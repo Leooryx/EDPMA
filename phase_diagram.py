@@ -4,71 +4,54 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 from scipy.fft import fft, fftfreq
+from scipy.signal import detrend
 
-from residence_time_opt import VolterraSolver, f_constant, z_initial_default, compute_R_exponential
+from residence_time_opt import VolterraSolver
 
 # ========================================================================
-# Parameters (pas touche à ceux-ci)
+# Parameters 
 # ========================================================================
     
 # Dimension (1 or 2)
 d = 1
-    
+
 # Power alpha for psi(u) = u^alpha
 alpha = 2
-    
+
 # Time parameters
 h = 0.01        # Time step
 N = 50          # Number of initial points
-M = 1000        # Number of points to compute
+M = 500        # Number of points to compute
 
-# Notre implémentation
-delta_x = 0.01
-N_x = 600
-    
-# Forcing function choice: 'constant', 'oscillating', or 'random'
-forcing_type = 'constant'
-    
-# Parameters for forcing function
-#f_amplitude = 1.0
-f_frequency = 1.0
-f_seed = 42
-    
-# R_j decay type: 'exponential' or 'power_law'
-R_decay_type = 'exponential'
-#decay_rate = 0.5      # For exponential decay
-power_exponent = 1.5  # For power law decay
-    
-# Initial condition amplitude
 z_initial_amplitude = 0.1
 
-#fonction z_init
+# Space steps and interval
+delta_x = 0.01
+N_x = 600
+
+decay_rate = 0.5
+f_amplitude = 9.0
+stiffness = 150000
+
+def f_constant(d, value):
+    return lambda t: value * np.ones(d)
+f_func = f_constant(d, value=f_amplitude)
+
+
+def z_initial_default(d, amplitude):
+    return lambda t: amplitude * np.exp(t / 10) * np.ones(d) # the past history, as a function of the time
 z_initial = z_initial_default(d, amplitude=z_initial_amplitude)
 
-#=================================================
-#parametres à faire varier pour diagramme de phase
-#=================================================
 
-#psi param
-raideur = 500000
-#R_j decay param
-decay_rate = 0.5
-#f_constant force value
-f_amplitude = 1.0
-
-#pas touche, mais varie avec ce qu'il y a au dessus
-#setup pour les coeff de R_j
-R = compute_R_exponential(M + N + 10, decay_rate)
-
-
-#=================================================
-#fonctions utiles
-#=================================================
+# ========================================================================
+# Fonctions utiles
+# ========================================================================
 
 def get_main_frequency(signal, sample_rate):
-    n = len(signal)
-    
-    # Compute FFT and frequencies
+    # on retire les tendances (par exemple la décroissance de la vitesse) pour nettoyer le signal
+    signal_clean = detrend(signal.flatten())
+
+    n = len(signal_clean)
     fft_vals = fft(signal)
     freqs    = fftfreq(n, d=1/sample_rate)  # d = time spacing between samples
     
@@ -85,11 +68,11 @@ def get_main_frequency(signal, sample_rate):
 #code pour génération des données
 #=================================================
 
-taille_grilles = 10
+taille_grilles = 100
 phase_array = []
 
 grille_f_amplitude = np.linspace(0 , 10 , taille_grilles)
-grille_raideur = np.linspace(0 , 10**6/2 , taille_grilles)
+grille_raideur = np.linspace(0 , 150000 , taille_grilles)
 
 for i in tqdm(range(taille_grilles), desc="Steps"):
     phase_array.append([])
@@ -103,15 +86,18 @@ for i in tqdm(range(taille_grilles), desc="Steps"):
             M=M,
             d=d,
             alpha=alpha,
-            R=R,
+            decay_rate=decay_rate,
             f_func=f_func,
             z_initial=z_initial,
-            raideur = grille_raideur[j])
+            stiffness=grille_raideur[j]
+        )
         
         t, Z = solver.solve()
-        Z_speed = np.gradient(Z, h, axis=0)
-        sample_rate = len(Z_speed)/(M*delta_x)
-        frec = get_main_frequency(signal= Z_speed, sample_rate=sample_rate)
+        Z_speed = np.gradient(Z, axis=0)
+        #on retire le passé qui cause une forte discontinuité
+        t, Z, Z_speed = t[N+1:], Z[N+1:], Z_speed[N+1:]
+        sample_rate = len(Z_speed)/h 
+        frec = get_main_frequency(signal=Z_speed, sample_rate=sample_rate)
         phase_array[-1].append(frec)
 
 

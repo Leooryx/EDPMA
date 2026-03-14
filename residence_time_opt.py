@@ -194,7 +194,7 @@ def main():
 
     decay_rate = 0.5
     f_amplitude = 9.0
-    stiffness = 1
+    stiffness = 150000
 
     file_name = "outputs/residence_time_opt"
     
