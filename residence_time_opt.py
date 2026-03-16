@@ -110,7 +110,8 @@ class VolterraSolver:
     def local_time(self, n):
         #"""A_x^n = \Delta t \delta_{x=z^{n-1}} + (1 - \lambda \Delta t)A_x^{n-1}"""
         
-        qt = np.exp(-self.decay_rate * self.h) #1-self.decay_rate*self.h
+        #qt = np.exp(-self.decay_rate * self.h) 
+        qt = 1-self.decay_rate*self.h
         
         if n==0:
             self.A = self.A_initial.copy() 
