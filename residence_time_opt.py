@@ -110,7 +110,7 @@ class VolterraSolver:
     def local_time(self, n):
         #"""A_x^n = \Delta t \delta_{x=z^{n-1}} + (1 - \lambda \Delta t)A_x^{n-1}"""
         
-        qt = 1-self.decay_rate*self.h
+        qt = np.exp(-self.decay_rate * self.h) #1-self.decay_rate*self.h
         
         if n==0:
             self.A = self.A_initial.copy() 
@@ -193,8 +193,8 @@ def main():
     N_x = 600
 
     decay_rate = 0.5 #lambda in our math
-    f_amplitude = 1 #9.0 #c in our math. 
-    stiffness = 1 #150000
+    f_amplitude = 50 #9.0 #c in our math. 
+    stiffness = 10000 #150000
 
     asymptotic_speed = (f_amplitude * decay_rate**3 / (2*stiffness))**(1/2)
 
