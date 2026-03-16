@@ -125,7 +125,7 @@ class VolterraSolver:
     def residual(self, z_n: np.ndarray, n: int) -> np.ndarray:
         
         res = self.psi(z_n - self.X_grid) * self.A 
-        res = np.sum(res) * self.delta_x
+        res = np.sum(res) #* self.delta_x
         res -= self.f_func(n * self.h)
         
         return res
@@ -192,9 +192,11 @@ def main():
     delta_x = 0.01
     N_x = 600
 
-    decay_rate = 0.5
-    f_amplitude = 9.0
-    stiffness = 150000
+    decay_rate = 0.5 #lambda in our math
+    f_amplitude = 1 #9.0 #c in our math. 
+    stiffness = 1 #150000
+
+    asymptotic_speed = (f_amplitude * decay_rate**3 / (2*stiffness))**(1/2)
 
     file_name = "outputs/residence_time_opt"
     
@@ -232,26 +234,40 @@ def main():
     )
     
     t, Z = solver.solve()
-    speed = np.gradient(Z, axis=0)
+    speed = np.gradient(Z, h, axis=0)
+    acceleration = np.gradient(speed, h, axis=0)
+    #remove past history for better plotting
+    t, Z, speed, acceleration = t[N+1:], Z[N+1:], speed[N+1:], acceleration[N+1:]
     
 
     # Plot    
     
-    fig, axes = plt.subplots(2, 1, figsize=(10, 10))
+    fig, axes = plt.subplots(3, 1, figsize=(10, 10))
     
-    axes[0].plot(t[N+1:], Z[N+1:], 'b-', linewidth=1.5, label=f'$Z(t)$')
+    axes[0].plot(t, Z, 'b-', linewidth=1.5, label=f'$Z(t)$')
     axes[0].axvline(x=0, color='r', linestyle='--', alpha=0.5, label='$t=0$')
     axes[0].set_xlabel('$t$')
     axes[0].set_ylabel('$Z$')
     axes[0].legend()
     axes[0].grid(True, alpha=0.3)
+    axes[0].set_title("Leukocyte position")
 
-    axes[1].plot(t[N+1:], speed[N+1:], 'b-', linewidth=1.5, label=f'$\\nabla Z(t)$')
+    axes[1].plot(t, speed, 'b-', linewidth=1.5, label=f'$\\nabla Z(t)$')
     axes[1].axvline(x=0, color='r', linestyle='--', alpha=0.5, label='$t=0$')
+    axes[1].axhline(y=asymptotic_speed, color='green', linestyle='--', alpha=0.5, label=f'Asymptotic speed: {round(asymptotic_speed, 3)}')
     axes[1].set_xlabel('$t$')
     axes[1].set_ylabel(f'$\\nabla Z$')
     axes[1].legend()
     axes[1].grid(True, alpha=0.3)
+    axes[1].set_title("Leukocyte speed")
+
+    axes[2].plot(t[1:], acceleration[1:], 'b-', linewidth=1.5, label=f'$\\nabla^2 Z(t)$')
+    axes[2].axvline(x=0, color='r', linestyle='--', alpha=0.5, label='$t=0$')
+    axes[2].set_xlabel('$t$')
+    axes[2].set_ylabel(f'$\\nabla^2 Z$')
+    axes[2].legend()
+    axes[2].grid(True, alpha=0.3)
+    axes[2].set_title("Leukocyte acceleration")
  
     plt.suptitle(f'Solution for $\\psi(u) = u^{{{alpha}}}$')
     plt.tight_layout()
