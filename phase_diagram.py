@@ -68,7 +68,7 @@ def get_main_frequency(signal, sample_rate):
 #code pour génération des données
 #=================================================
 
-taille_grilles = 100
+taille_grilles = 50
 phase_array = []
 
 grille_f_amplitude = np.linspace(0 , 10 , taille_grilles)
