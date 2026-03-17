@@ -195,8 +195,8 @@ def main():
 
     lamb = 4
     decay_rate = 1/lamb
-    f_amplitude =  50    #50 #c in our math. 
-    stiffness = 10000  #10000
+    f_amplitude =  1    #50 #c in our math. 
+    stiffness = 1  #10000
 
     asymptotic_speed = (f_amplitude * decay_rate**3 / (2*stiffness))**(1/2)
 
