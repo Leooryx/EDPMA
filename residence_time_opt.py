@@ -185,13 +185,13 @@ def main():
     # Time parameters
     h = 0.01        # Time step
     N = 50          # Number of initial points
-    M = 500        # Number of points to compute
+    M = 250      # Number of points to compute
 
     z_initial_amplitude = 0.1
 
     # Space steps and interval
     delta_x = 0.01
-    N_x = 600
+    N_x = 500
 
     lamb = 4
     decay_rate = 1/lamb
