@@ -9,7 +9,8 @@ where:
 - Z^n is a vector of dimension d in {1, 2}
 """
 
-# this code represents the dynamic according to the density of the links. 
+# this wonderful code represents the dynamic according to the density of the links. 
+
 
 import numpy as np
 import matplotlib.pyplot as plt
