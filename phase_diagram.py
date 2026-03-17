@@ -1,10 +1,6 @@
-import scipy
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-
-from scipy.fft import fft, fftfreq
-from scipy.signal import detrend
 
 from residence_time_opt import VolterraSolver
 
@@ -47,28 +43,31 @@ z_initial = z_initial_default(d, amplitude=z_initial_amplitude)
 # Fonctions utiles
 # ========================================================================
 
-def get_main_frequency(signal, sample_rate):
-    # on retire les tendances (par exemple la décroissance de la vitesse) pour nettoyer le signal
-    signal_clean = detrend(signal.flatten())
-
-    n = len(signal_clean)
-    fft_vals = fft(signal)
-    freqs    = fftfreq(n, d=1/sample_rate)  # d = time spacing between samples
-    
-    # Keep only positive frequencies and their magnitudes
-    pos_mask    = freqs > 0
-    freqs_pos   = freqs[pos_mask]
-    magnitudes  = np.abs(fft_vals[pos_mask])
-    
-    # Pick the frequency with the highest magnitude
-    main_freq = freqs_pos[np.argmax(magnitudes)]
-    return main_freq
+def get_first_WL(signal, dt):
+    L = len(signal)
+    first_jump_index = 0
+    second_jump_index = 0
+    for i in range(2, L):
+        instant_index_variation = signal[i]-signal[i-1]
+        delayed_index_variation = signal[i]-signal[i-2]
+        if instant_index_variation >= 7*delayed_index_variation :
+            first_jump_index = i
+            break
+    for j in range(first_jump_index+2, L):
+        instant_index_variation = signal[j]-signal[j-1]
+        delayed_index_variation = signal[j]-signal[j-2]
+        if instant_index_variation >= 10*delayed_index_variation :
+            second_jump_index = j
+            break
+    delta_index = second_jump_index-first_jump_index
+    WL = delta_index*dt
+    return WL
 
 #=================================================
 #code pour génération des données
 #=================================================
 
-taille_grilles = 50
+taille_grilles = 5
 phase_array = []
 
 grille_f_amplitude = np.linspace(0 , 10 , taille_grilles)
@@ -94,11 +93,11 @@ for i in tqdm(range(taille_grilles), desc="Steps"):
         
         t, Z = solver.solve()
         Z_speed = np.gradient(Z, axis=0)
+        Z_accel = np.gradient(Z_speed, axis=0)
         #on retire le passé qui cause une forte discontinuité
-        t, Z, Z_speed = t[N+1:], Z[N+1:], Z_speed[N+1:]
-        sample_rate = len(Z_speed)/h 
-        frec = get_main_frequency(signal=Z_speed, sample_rate=sample_rate)
-        phase_array[-1].append(frec)
+        t, Z, Z_speed, Z_accel = t[N+1:], Z[N+1:], Z_speed[N+1:], Z_accel[N+1:]
+        first_WL = get_first_WL(signal=Z_accel, dt=h)
+        phase_array[-1].append(first_WL)
 
 
 phase_array = np.array(phase_array)
@@ -114,4 +113,4 @@ im = ax.imshow(
 )
 fig.colorbar(im, ax=ax)
 plt.show()
-plt.savefig(f'/home/onyxia/work/EDPMA/phase_diagram.png')
+plt.savefig(f'phase_diagram.png')
