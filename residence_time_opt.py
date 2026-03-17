@@ -9,8 +9,7 @@ where:
 - Z^n is a vector of dimension d in {1, 2}
 """
 
-# this wonderful code represents the dynamic according to the density of the links. 
-
+# this code represents the dynamic according to the density of the links. 
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -194,9 +193,10 @@ def main():
     delta_x = 0.01
     N_x = 600
 
-    decay_rate = 0.5 #lambda in our math
-    f_amplitude = 50 #9.0 #c in our math. 
-    stiffness = 10000 #150000
+    lamb = 4
+    decay_rate = 1/lamb
+    f_amplitude =  50    #50 #c in our math. 
+    stiffness = 10000  #10000
 
     asymptotic_speed = (f_amplitude * decay_rate**3 / (2*stiffness))**(1/2)
 
@@ -271,7 +271,7 @@ def main():
     axes[2].grid(True, alpha=0.3)
     axes[2].set_title("Leukocyte acceleration")
  
-    plt.suptitle(f'Solution for $\\psi(u) = u^{{{alpha}}}$')
+    plt.suptitle(f'Solution for $\\psi(u) = u^{{{alpha}}}$ for stiffness={stiffness}, force={f_amplitude}')
     plt.tight_layout()
     plt.savefig(f'/home/onyxia/work/EDPMA/{file_name}.png')
     plt.show()
