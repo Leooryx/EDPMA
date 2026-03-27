@@ -1,14 +1,3 @@
-"""
-Solver for the equation:
-h * sum_{j>=1} psi(Z^n - Z^{n-j}) * R_j = f^n
-
-where:
-- Z^n = z_p(n*h) for -N <= n < 0 (initial conditions)
-- psi(u) = u^alpha (component-wise for vectors)
-- f^n = f(n*h)
-- Z^n is a vector of dimension d in {1, 2}
-"""
-
 # this code represents the dynamic according to the density of the links. 
 
 import numpy as np
@@ -16,6 +5,12 @@ import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
 from typing import Callable, Tuple, Optional
 from tqdm import tqdm
+from pathlib import Path
+
+# chemin vers le dossier du script courant
+BASE_DIR = Path(__file__).resolve().parent
+# construire un chemin enfant
+file_path = BASE_DIR / "outputs/residence_time_opt.png"
 
 
 class VolterraSolver:
@@ -200,7 +195,6 @@ def main():
 
     asymptotic_speed = (f_amplitude * decay_rate**3 / (2*stiffness))**(1/2)
 
-    file_name = "outputs/residence_time_opt"
     
 
     
@@ -273,7 +267,7 @@ def main():
  
     plt.suptitle(f'Solution for $\\psi(u) = u^{{{alpha}}}$ for stiffness={stiffness}, force={f_amplitude}')
     plt.tight_layout()
-    plt.savefig(f'/home/onyxia/work/EDPMA/{file_name}.png')
+    plt.savefig(file_path)
     plt.show()
     
 

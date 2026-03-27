@@ -1,8 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from pathlib import Path
 
 from residence_time_opt import VolterraSolver
+
+
+# chemin vers le dossier du script courant
+BASE_DIR = Path(__file__).resolve().parent
+# construire un chemin enfant
+file_path = BASE_DIR / "phase_diagram.png"
 
 # ========================================================================
 # Parameters 
@@ -67,7 +74,7 @@ def get_first_WL(signal, dt):
 #code pour génération des données
 #=================================================
 
-taille_grilles = 5
+taille_grilles = 30
 phase_array = []
 
 grille_f_amplitude = np.linspace(0 , 10 , taille_grilles)
@@ -113,4 +120,4 @@ im = ax.imshow(
 )
 fig.colorbar(im, ax=ax)
 plt.show()
-plt.savefig(f'phase_diagram.png')
+plt.savefig(file_path)
