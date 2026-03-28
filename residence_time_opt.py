@@ -112,16 +112,24 @@ class VolterraSolver:
             self.A = self.A_initial.copy() 
         else:
             self.A *= qt
-            z_n = self.Z[n + self.N - 1]
-            k_idx = (z_n / self.delta_x).astype(int)
-            self.A[k_idx] += self.h
+            z_n = self.Z[n + self.N - 1][0] #[0] because it is a numpy array of dimension 1, which is not compatible with int later
+            #k_idx = (z_n / self.delta_x).astype(int) #pb with this type of space discretization?
+            #self.A[k_idx] += self.h
+            # Better way: updating left and right ends of the bin
+            pos_in_grid = z_n / self.delta_x
+            idx_left = int(np.floor(pos_in_grid)) 
+            idx_right = idx_left + 1                  
+            weight_right = pos_in_grid - idx_left
+            weight_left = 1.0 - weight_right
+            self.A[idx_left] += self.h * weight_left
+            self.A[idx_right] += self.h * weight_right
         #no return we just update the list
 
 
     def residual(self, z_n: np.ndarray, n: int) -> np.ndarray:
         
         res = self.psi(z_n - self.X_grid) * self.A 
-        res = np.sum(res) #* self.delta_x
+        res = np.sum(res) 
         res -= self.f_func(n * self.h)
         
         return res
@@ -147,7 +155,7 @@ class VolterraSolver:
     
     def solve(self) -> Tuple[np.ndarray, np.ndarray]:
     
-        for n in range(self.M +1):
+        for n in tqdm(range(self.M +1)):
             self.Z[n + self.N] = self.solve_step(n)
         t = np.array([n * self.h for n in range(-self.N, self.M + 1)])
         
@@ -180,7 +188,7 @@ def main():
     # Time parameters
     h = 0.01        # Time step
     N = 50          # Number of initial points
-    M = 1000      # Number of points to compute
+    M = 2000      # Number of points to compute
 
     z_initial_amplitude = 0.1
 
@@ -188,15 +196,16 @@ def main():
     delta_x = 0.01 
     N_x = 500
 
-    lamb = 4
+    lamb = 8
     decay_rate = 1/lamb
-    f_amplitude =  50   #50 #c in our math. 
-    stiffness = 10000  #10000
+  
+    f_amplitude =  1   #50 #c in our math. 
+    stiffness = 1  #10000
 
     # be careful about whether it should be 1/lambda or lambda
     asymptotic_speed = (f_amplitude * decay_rate**3 / (2*stiffness))**(1/2)
 
-    T_theo = delta_x / asymptotic_speed
+    #T_theo = delta_x / asymptotic_speed
 
     
 
@@ -238,7 +247,7 @@ def main():
     #remove past history for better plotting
     t, Z, speed, acceleration = t[N+1:], Z[N+1:], speed[N+1:], acceleration[N+1:]
 
-    t_oscillations = np.arange(0, t[-1], T_theo) #prints all oscillations
+    #t_oscillations = np.arange(0, t[-1], T_theo) #prints all oscillations
     
 
     # Plot    
@@ -270,11 +279,12 @@ def main():
     #axes[2].grid(True, alpha=0.3)
     axes[2].set_title("Leukocyte acceleration")
 
-    for ax in axes:
-        for i, t_osc in enumerate(t_oscillations):
-            # On ajoute un label uniquement pour la première ligne pour la légende
-            label = "Theoretical $T = \\Delta x / asymptotic_speed$" if i == 0 else ""
-            ax.axvline(x=t_osc, color='green', linestyle=':', alpha=0.6, linewidth=1, label=label)
+    '''if T_theo > 1:
+        for ax in axes:
+            for i, t_osc in enumerate(t_oscillations):
+                # On ajoute un label uniquement pour la première ligne pour la légende
+                label = "Period" if i == 0 else ""
+                ax.axvline(x=t_osc, color='green', linestyle=':', alpha=0.6, linewidth=1, label=label)'''
  
     plt.suptitle(f'Solution for $\\psi(u) = u^{{{alpha}}}$ for stiffness={stiffness}, force={f_amplitude}')
     plt.tight_layout()
