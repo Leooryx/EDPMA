@@ -180,20 +180,23 @@ def main():
     # Time parameters
     h = 0.01        # Time step
     N = 50          # Number of initial points
-    M = 250      # Number of points to compute
+    M = 1000      # Number of points to compute
 
     z_initial_amplitude = 0.1
 
     # Space steps and interval
-    delta_x = 0.01
+    delta_x = 0.01 
     N_x = 500
 
     lamb = 4
     decay_rate = 1/lamb
-    f_amplitude =  1    #50 #c in our math. 
-    stiffness = 1  #10000
+    f_amplitude =  50   #50 #c in our math. 
+    stiffness = 10000  #10000
 
+    # be careful about whether it should be 1/lambda or lambda
     asymptotic_speed = (f_amplitude * decay_rate**3 / (2*stiffness))**(1/2)
+
+    T_theo = delta_x / asymptotic_speed
 
     
 
@@ -234,6 +237,8 @@ def main():
     acceleration = np.gradient(speed, h, axis=0)
     #remove past history for better plotting
     t, Z, speed, acceleration = t[N+1:], Z[N+1:], speed[N+1:], acceleration[N+1:]
+
+    t_oscillations = np.arange(0, t[-1], T_theo) #prints all oscillations
     
 
     # Plot    
@@ -245,7 +250,7 @@ def main():
     axes[0].set_xlabel('$t$')
     axes[0].set_ylabel('$Z$')
     axes[0].legend()
-    axes[0].grid(True, alpha=0.3)
+    #axes[0].grid(True, alpha=0.3)
     axes[0].set_title("Leukocyte position")
 
     axes[1].plot(t, speed, 'b-', linewidth=1.5, label=f'$\\nabla Z(t)$')
@@ -254,7 +259,7 @@ def main():
     axes[1].set_xlabel('$t$')
     axes[1].set_ylabel(f'$\\nabla Z$')
     axes[1].legend()
-    axes[1].grid(True, alpha=0.3)
+    #axes[1].grid(True, alpha=0.3)
     axes[1].set_title("Leukocyte speed")
 
     axes[2].plot(t[1:], acceleration[1:], 'b-', linewidth=1.5, label=f'$\\nabla^2 Z(t)$')
@@ -262,8 +267,14 @@ def main():
     axes[2].set_xlabel('$t$')
     axes[2].set_ylabel(f'$\\nabla^2 Z$')
     axes[2].legend()
-    axes[2].grid(True, alpha=0.3)
+    #axes[2].grid(True, alpha=0.3)
     axes[2].set_title("Leukocyte acceleration")
+
+    for ax in axes:
+        for i, t_osc in enumerate(t_oscillations):
+            # On ajoute un label uniquement pour la première ligne pour la légende
+            label = "Theoretical $T = \\Delta x / asymptotic_speed$" if i == 0 else ""
+            ax.axvline(x=t_osc, color='green', linestyle=':', alpha=0.6, linewidth=1, label=label)
  
     plt.suptitle(f'Solution for $\\psi(u) = u^{{{alpha}}}$ for stiffness={stiffness}, force={f_amplitude}')
     plt.tight_layout()
