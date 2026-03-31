@@ -69,6 +69,8 @@ class VolterraSolver:
         self.f_func = f_func
         self.z_initial = z_initial
         self.stiffness = stiffness
+
+        self.A_history = []
         
         self.X_grid = np.arange(self.N_x, step=self.delta_x) 
         self.A_minus_N = np.zeros( int(self.N_x / self.delta_x)) 
@@ -81,7 +83,7 @@ class VolterraSolver:
             #particle goes between 0 and 0.09990005 at initial time
 
         def initial_local_time(Z):
-            qt = 1-self.decay_rate*self.h
+            qt = 1 - self.decay_rate*self.h
             for n in range(-N, 0):
                 if n == -N:
                     A_initial = self.A_minus_N.copy()
@@ -141,6 +143,8 @@ class VolterraSolver:
         """
         # local time update
         self.local_time(n)
+
+        self.A_history.append(self.A.copy())
         
         # Initial guess: use previous value
         Z_guess = self.Z[n + self.N - 1] if n > 0 else self.Z[self.N - 1]
@@ -150,7 +154,7 @@ class VolterraSolver:
             Z_guess,
             full_output=False
         )
-        
+       
         return solution
     
     def solve(self) -> Tuple[np.ndarray, np.ndarray]:
@@ -160,6 +164,35 @@ class VolterraSolver:
         t = np.array([n * self.h for n in range(-self.N, self.M + 1)])
         
         return t, self.Z
+
+    def plot_local_time_evolution(self):
+        plt.figure(figsize=(10, 6))
+        
+        # remove past history
+        relevant_history = self.A_history[self.N:]
+        
+        # only keep x-coordinate reached by the cell, and add 20% for better visualization
+        z_max_reached = np.max(self.Z[self.N:])
+        x_limit = z_max_reached * 1.2 
+
+        # Calcul de l'alpha dynamique
+        alpha_value = max(0.01, 5.0 / len(relevant_history)) 
+        
+        for A_m in relevant_history[::5]: # one step on five steps to reduce computing time
+            plt.plot(self.X_grid, A_m, color='blue', alpha=alpha_value, lw=0.8)
+
+        #zoom
+        plt.xlim(0, x_limit) 
+        
+        
+        plt.title(f"Temps Local - Zoom sur la zone active (x_max ≈ {z_max_reached:.2f})")
+        plt.xlabel("Position x")
+        plt.ylabel("Accumulation A(x, t)")
+        plt.grid(True, linestyle='--', alpha=0.3)
+        
+        plt.tight_layout()
+        plt.savefig(f"{BASE_DIR}/outputs/local_time_zoom.png")
+        plt.show()
 
 
 
@@ -188,7 +221,7 @@ def main():
     # Time parameters
     h = 0.01        # Time step
     N = 50          # Number of initial points
-    M = 2000      # Number of points to compute
+    M = 500      # Number of points to compute
 
     z_initial_amplitude = 0.1
 
@@ -196,11 +229,11 @@ def main():
     delta_x = 0.01 
     N_x = 500
 
-    lamb = 8
+    lamb = 2
     decay_rate = 1/lamb
   
-    f_amplitude =  1   #50 #c in our math. 
-    stiffness = 1  #10000
+    f_amplitude =  50   #50 #c in our math. 
+    stiffness = 10000  #10000
 
     # be careful about whether it should be 1/lambda or lambda
     asymptotic_speed = (f_amplitude * decay_rate**3 / (2*stiffness))**(1/2)
@@ -214,6 +247,10 @@ def main():
         """Constant forcing function."""
         return lambda t: value * np.ones(d)
     f_func = f_constant(d, value=f_amplitude)
+
+    def f_periodic():
+        return lambda t: np.array([np.sin(2 * np.pi * t)])
+    f_period = f_periodic()
     
 
     def z_initial_default(d: int, amplitude: float = 0.1) -> Callable[[float], np.ndarray]:
@@ -236,12 +273,13 @@ def main():
         d=d,
         alpha=alpha,
         decay_rate=decay_rate,
-        f_func=f_func,
+        f_func=f_period, # oscillating function
         z_initial=z_initial,
         stiffness=stiffness
     )
     
     t, Z = solver.solve()
+    ploting = solver.plot_local_time_evolution()
     speed = np.gradient(Z, h, axis=0)
     acceleration = np.gradient(speed, h, axis=0)
     #remove past history for better plotting
@@ -291,6 +329,7 @@ def main():
     plt.savefig(file_path)
     plt.show()
     
+
 
 
 
